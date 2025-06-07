@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAG Assistant Interface</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    .card-transition {
+      transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    .slider-thumb::-webkit-slider-thumb {
+      appearance: none;
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    .slider-thumb::-moz-range-thumb {
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    .custom-select {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 0.5rem center;
+      background-repeat: no-repeat;
+      background-size: 1.5em 1.5em;
+      padding-right: 2.5rem;
+    }
+    .loading-spinner {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .glass-effect {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.9);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen font-sans">
+  <div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">RAG Assistant Interface</h1>
+      <p class="text-gray-600">Powered by Azure OpenAI</p>
+    </div>
+
+    <!-- Three Cards Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+      
+      <!-- Card 1: GPT Model Parameters -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-transition card-hover glass-effect">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+            <i class="fas fa-cogs text-white"></i>
+          </div>
+          <h2 class="text-xl font-bold text-gray-800">Model Parameters</h2>
+        </div>
+
+        <!-- GPT Mode Dropdown -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-robot mr-1"></i> GPT Mode
+          </label>
+            <select id="gpt-mode" class="w-full p-3 border border-gray-300 rounded-lg custom-select focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+              <option value="gpt-4o">GPT-4o</option>
+              <option value="o3">o3</option>
+              <option value="o4-mini">o4-mini</option>
+            </select>
+        </div>
+
+        <!-- System Prompt -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-robot mr-1"></i> System Prompt
+          </label>
+          <textarea 
+            id="system-prompt" 
+            class="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none bg-gray-100" 
+            readonly
+          ></textarea>
+        </div>
+
+        <!-- Append to System Prompt Text Box -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-edit mr-1"></i> Append to System Prompt
+          </label>
+          <textarea 
+            id="prompt-input" 
+            class="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+            placeholder="Enter additional prompt text here..."
+          ></textarea>
+        </div>
+
+        <!-- User Query Text Box -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-question-circle mr-1"></i> User Query
+          </label>
+          <textarea 
+            id="query-input" 
+            class="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+            placeholder="Enter your query here..."
+          ></textarea>
+        </div>
+
+        <!-- Temperature Slider -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-thermometer-half mr-1"></i> Temperature: <span id="temp-value" class="font-semibold text-blue-600">0.7</span>
+          </label>
+          <input 
+            id="temperature" 
+            type="range" 
+            min="0" 
+            max="2" 
+            step="0.1" 
+            value="0.7" 
+            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+          />
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>0.0 (Focused)</span>
+            <span>2.0 (Creative)</span>
+          </div>
+        </div>
+
+        <!-- Top K Slider -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-layer-group mr-1"></i> Top K: <span id="top-k-value" class="font-semibold text-blue-600">50</span>
+          </label>
+          <input 
+            id="top-k" 
+            type="range" 
+            min="1" 
+            max="100" 
+            step="1" 
+            value="50" 
+            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+          />
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>1</span>
+            <span>100</span>
+          </div>
+        </div>
+
+        <!-- Top P Slider -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-percentage mr-1"></i> Top P: <span id="top-p-value" class="font-semibold text-blue-600">0.9</span>
+          </label>
+          <input 
+            id="top-p" 
+            type="range" 
+            min="0" 
+            max="1" 
+            step="0.05" 
+            value="0.9" 
+            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+          />
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>0.0</span>
+            <span>1.0</span>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <button 
+          id="generate-btn" 
+          class="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          <i class="fas fa-play mr-2"></i> Generate Response
+        </button>
+      </div>
+
+      <!-- Card 2: Model Output -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-transition card-hover glass-effect">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-3">
+            <i class="fas fa-comment-dots text-white"></i>
+          </div>
+          <h2 class="text-xl font-bold text-gray-800">Model Output</h2>
+        </div>
+
+        <!-- Loading State -->
+        <div id="output-loading" class="hidden flex flex-col items-center justify-center py-12">
+          <div class="loading-spinner mb-4"></div>
+          <p class="text-gray-600 text-sm">Generating response...</p>
+        </div>
+
+        <!-- Output Content -->
+        <div id="output-content" class="space-y-4">
+          <!-- Response -->
+          <div>
+            <h3 class="text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-reply mr-1"></i> Response
+            </h3>
+            <div id="model-response" class="bg-gray-50 border border-gray-200 rounded-lg p-4 min-h-[200px] max-h-[300px] overflow-y-auto">
+              <p class="text-gray-400 italic text-center py-8">Response will appear here after generation</p>
+            </div>
+          </div>
+
+          <!-- Sources -->
+          <div>
+            <h3 class="text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-book mr-1"></i> Sources
+            </h3>
+            <div id="model-sources" class="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-[150px] overflow-y-auto">
+              <p class="text-gray-400 italic text-center py-4">Sources will appear here</p>
+            </div>
+          </div>
+
+          <!-- Metadata -->
+          <div>
+            <h3 class="text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-info-circle mr-1"></i> Metadata</h3>
+            <div id="model-metadata" class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>Tokens: <span id="token-count" class="font-semibold">-</span></div>
+                <div>Time: <span id="response-time" class="font-semibold">-</span></div>
+                <div>Model: <span id="used-model" class="font-semibold">-</span></div>
+                <div>Status: <span id="response-status" class="font-semibold">-</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: AI Evaluation -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-transition card-hover glass-effect">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mr-3">
+            <i class="fas fa-chart-line text-white"></i>
+          </div>
+          <h2 class="text-xl font-bold text-gray-800">AI Evaluation</h2>
+        </div>
+
+        <!-- Evaluation Loading -->
+        <div id="eval-loading" class="hidden flex flex-col items-center justify-center py-12">
+          <div class="loading-spinner mb-4"></div>
+          <p class="text-gray-600 text-sm">Evaluating response...</p>
+        </div>
+
+        <!-- Evaluation Content -->
+        <div id="eval-content" class="space-y-4">
+          <!-- Overall Score -->
+          <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full mb-2">
+              <span id="overall-score" class="text-2xl font-bold text-white">-</span>
+            </div>
+            <p class="text-sm text-gray-600">Overall Score</p>
+          </div>
+
+          <!-- Evaluation Metrics -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-gray-700">Relevance</span>
+              <div class="flex items-center">
+                <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                  <div id="relevance-bar" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+                <span id="relevance-score" class="text-sm font-semibold text-gray-600">-</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-gray-700">Accuracy</span>
+              <div class="flex items-center">
+                <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                  <div id="accuracy-bar" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+                <span id="accuracy-score" class="text-sm font-semibold text-gray-600">-</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-gray-700">Completeness</span>
+              <div class="flex items-center">
+                <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                  <div id="completeness-bar" class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+                <span id="completeness-score" class="text-sm font-semibold text-gray-600">-</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-gray-700">Clarity</span>
+              <div class="flex items-center">
+                <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                  <div id="clarity-bar" class="bg-purple-500 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+                <span id="clarity-score" class="text-sm font-semibold text-gray-600">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detailed Analysis -->
+          <div class="mt-6">
+            <h3 class="text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-clipboard-list mr-1"></i> Detailed Analysis
+            </h3>
+            <div id="detailed-evaluation" class="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-[200px] overflow-y-auto">
+              <p class="text-gray-400 italic text-center py-8">Detailed evaluation will appear here</p>
+            </div>
+          </div>
+
+          <!-- Suggestions -->
+          <div>
+            <h3 class="text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-lightbulb mr-1"></i> Suggestions
+            </h3>
+            <div id="suggestions" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p class="text-gray-400 italic text-center py-4">Suggestions will appear here</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-8 text-gray-500 text-sm">
+      <p>RAG Assistant Interface • Powered by Azure OpenAI</p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Temperature slider
+      const tempSlider = document.getElementById('temperature');
+      const tempValue = document.getElementById('temp-value');
+      tempSlider.addEventListener('input', () => tempValue.textContent = tempSlider.value);
+
+      // Top K slider
+      const topKSlider = document.getElementById('top-k');
+      const topKValue = document.getElementById('top-k-value');
+      topKSlider.addEventListener('input', () => topKValue.textContent = topKSlider.value);
+
+      // Top P slider
+      const topPSlider = document.getElementById('top-p');
+      const topPValue = document.getElementById('top-p-value');
+      topPSlider.addEventListener('input', () => topPValue.textContent = topPSlider.value);
+
+      // Fetch and display the default system prompt
+      fetch('/api/system_prompt')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('system-prompt').value = data.system_prompt;
+        });
+
+      // Generate button
+      document.getElementById('generate-btn').addEventListener('click', generateResponse);
+
+      // Disable sliders for o3 and o4-mini models
+      const modelSelect = document.getElementById('gpt-mode');
+      const updateSliders = () => {
+        const disabled = modelSelect.value === 'o3' || modelSelect.value === 'o4-mini';
+        ['temperature', 'top-k', 'top-p'].forEach(id => {
+          const el = document.getElementById(id);
+          el.disabled = disabled;
+        });
+      };
+      modelSelect.addEventListener('change', updateSliders);
+      updateSliders();
+    });
+
+    function generateResponse() {
+      const gptMode = document.getElementById('gpt-mode').value;
+      const appendedPrompt = document.getElementById('prompt-input').value.trim();
+      const query = document.getElementById('query-input').value.trim();
+      if (!query) { alert('Please enter a query'); return; }
+      showLoading();
+      const requestData = {
+        query: query,
+        model: gptMode,
+        appended_prompt: appendedPrompt,
+        temperature: parseFloat(document.getElementById('temperature').value),
+        top_k: parseInt(document.getElementById('top-k').value, 10),
+        top_p: parseFloat(document.getElementById('top-p').value),
+        max_tokens: 1000
+      };
+      fetch('/api/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+      })
+      .then(res => { if (!res.ok) throw new Error(res.statusText); return res.json(); })
+      .then(data => {
+        hideLoading();
+        displayResults(data);
+        evaluateResponse(data);
+      })
+      .catch(err => {
+        hideLoading();
+        console.error('Error:', err);
+        displayError(`Connection error: ${err.message}`);
+      });
+    }
+
+    function evaluateResponse(data) {
+      document.getElementById('eval-loading').classList.remove('hidden');
+      document.getElementById('eval-content').classList.add('hidden');
+      fetch('/api/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: data.query, answer: data.answer, sources: data.sources })
+      })
+      .then(res => { if (!res.ok) throw new Error(res.statusText); return res.json(); })
+      .then(evaluation => displayEvaluation(evaluation))
+      .catch(err => {
+        console.error('Evaluation error:', err);
+        displayEvaluation({
+          overall_score: 0,
+          relevance: 0,
+          accuracy: 0,
+          completeness: 0,
+          clarity: 0,
+          detailed_analysis: 'Error during evaluation.',
+          suggestions: err.message
+        });
+      })
+      .finally(() => {
+        document.getElementById('eval-loading').classList.add('hidden');
+        document.getElementById('eval-content').classList.remove('hidden');
+      });
+    }
+
+    function showLoading() {
+      document.getElementById('output-loading').classList.remove('hidden');
+      document.getElementById('output-content').classList.add('hidden');
+      document.getElementById('eval-loading').classList.remove('hidden');
+      document.getElementById('eval-content').classList.add('hidden');
+    }
+    function hideLoading() {
+      document.getElementById('output-loading').classList.add('hidden');
+      document.getElementById('output-content').classList.remove('hidden');
+      document.getElementById('eval-loading').classList.add('hidden');
+      document.getElementById('eval-content').classList.remove('hidden');
+    }
+
+    function displayResults(data) {
+      document.getElementById('model-response').innerHTML = `<p class="text-gray-800">${data.answer || 'No response generated'}</p>`;
+      const sourcesHtml = data.sources && data.sources.length
+        ? data.sources.map(s => `<div class="mb-2 p-2 bg-white rounded border"><strong>${s.title}:</strong> ${s.content}</div>`).join('')
+        : '<p class="text-gray-400 italic">No sources available</p>';
+      document.getElementById('model-sources').innerHTML = sourcesHtml;
+      document.getElementById('token-count').textContent = data.token_count || '-';
+      document.getElementById('response-time').textContent = data.response_time ? `${data.response_time}ms` : '-';
+      document.getElementById('used-model').textContent = data.model || '-';
+      document.getElementById('response-status').textContent = data.status || 'Success';
+    }
+
+    function displayEvaluation(evaluation) {
+      document.getElementById('overall-score').textContent = evaluation.overall_score;
+      updateMetricBar('relevance', evaluation.relevance);
+      updateMetricBar('accuracy', evaluation.accuracy);
+      updateMetricBar('completeness', evaluation.completeness);
+      updateMetricBar('clarity', evaluation.clarity);
+      document.getElementById('detailed-evaluation').innerHTML = `<p class="text-gray-800">${evaluation.detailed_analysis}</p>`;
+      document.getElementById('suggestions').innerHTML = `<p class="text-blue-800">${evaluation.suggestions}</p>`;
+    }
+
+    function updateMetricBar(metric, score) {
+      const bar = document.getElementById(`${metric}-bar`);
+      const scoreEl = document.getElementById(`${metric}-score`);
+      bar.style.width = `${score}%`;
+      scoreEl.textContent = score;
+    }
+
+    function displayError(msg) {
+      document.getElementById('model-response').innerHTML = `<p class="text-red-600">${msg}</p>`;
+    }
+  </script>
+</body>
+</html>

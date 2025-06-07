@@ -1,0 +1,14 @@
+ * Serving Flask app 'main'
+ * Debug mode: on
+2025-06-05 11:03:18,782 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://10.255.88.16:5002
+2025-06-05 11:03:18,782 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-05 11:03:18,783 - INFO -  * Restarting with stat
+2025-06-05 11:03:19,220 - WARNING -  * Debugger is active!
+2025-06-05 11:03:19,230 - INFO -  * Debugger PIN: 761-109-651
+/Users/vieirama/.pyenv/versions/3.11.5/lib/python3.11/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/Users/vieirama/.pyenv/versions/3.11.5/lib/python3.11/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
