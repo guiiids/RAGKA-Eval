@@ -392,68 +392,49 @@
       modelSelect.addEventListener('change', updateSliders);
       updateSliders();
     });
-
-    function generateResponse() {
-      const gptMode = document.getElementById('gpt-mode').value;
-      const appendedPrompt = document.getElementById('prompt-input').value.trim();
-      const query = document.getElementById('query-input').value.trim();
-      if (!query) { alert('Please enter a query'); return; }
-      showLoading();
-      const requestData = {
-        query: query,
-        model: gptMode,
-        appended_prompt: appendedPrompt,
-        temperature: parseFloat(document.getElementById('temperature').value),
-        top_k: parseInt(document.getElementById('top-k').value, 10),
-        top_p: parseFloat(document.getElementById('top-p').value),
-        max_tokens: 1000
-      };
-      fetch('/api/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestData)
-      })
-      .then(res => { if (!res.ok) throw new Error(res.statusText); return res.json(); })
-      .then(data => {
-        hideLoading();
-        displayResults(data);
-        evaluateResponse(data);
-      })
-      .catch(err => {
-        hideLoading();
-        console.error('Error:', err);
-        displayError(`Connection error: ${err.message}`);
-      });
-    }
-
-    function evaluateResponse(data) {
-      document.getElementById('eval-loading').classList.remove('hidden');
-      document.getElementById('eval-content').classList.add('hidden');
-      fetch('/api/evaluate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: data.query, answer: data.answer, sources: data.sources })
-      })
-      .then(res => { if (!res.ok) throw new Error(res.statusText); return res.json(); })
-      .then(evaluation => displayEvaluation(evaluation))
-      .catch(err => {
-        console.error('Evaluation error:', err);
-        displayEvaluation({
-          overall_score: 0,
-          relevance: 0,
-          accuracy: 0,
-          completeness: 0,
-          clarity: 0,
-          detailed_analysis: 'Error during evaluation.',
-          suggestions: err.message
-        });
-      })
-      .finally(() => {
-        document.getElementById('eval-loading').classList.add('hidden');
-        document.getElementById('eval-content').classList.remove('hidden');
-      });
-    }
-
+function displayResults(data) {
+  document.getElementById('model-response').innerHTML = `<p class="text-gray-800">${data.answer || 'No response generated'}</p>`;
+  const sourcesHtml = data.sources && data.sources.length
+    ? data.sources.map(s => `<div class="mb-2 p-2 bg-white rounded border"><strong>${s.title}:</strong> ${s.content}</div>`).join('')
+    : '<p class="text-gray-400 italic">No sources available</p>';
+  document.getElementById('model-sources').innerHTML = sourcesHtml;
+  document.getElementById('token-count').textContent = data.token_count || '-';
+  document.getElementById('response-time').textContent = data.response_time ? `${data.response_time}ms` : '-';
+  document.getElementById('used-model').textContent = data.model || '-';
+  document.getElementById('response-status').textContent = data.status || 'Success';
+}
+  function generateResponse() {
+  const gptMode = document.getElementById('gpt-mode').value;
+  const appendedPrompt = document.getElementById('prompt-input').value.trim();
+  const query = document.getElementById('query-input').value.trim();
+  if (!query) { alert('Please enter a query'); return; }
+  showLoading();
+  const requestData = {
+    query: query,
+    model: gptMode,
+    appended_prompt: appendedPrompt,
+    temperature: parseFloat(document.getElementById('temperature').value),
+    top_k: parseInt(document.getElementById('top-k').value, 10),
+    top_p: parseFloat(document.getElementById('top-p').value),
+    max_tokens: 1000
+  };
+  fetch('/api/query', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestData)
+  })
+  .then(res => { if (!res.ok) throw new Error(res.statusText); return res.json(); })
+  .then(data => {
+    hideLoading();
+    displayResults(data);
+    displayEvaluation(data.evaluation); // <- Show the markdown result from the backend
+  })
+  .catch(err => {
+    hideLoading();
+    console.error('Error:', err);
+    displayEvaluation('Error during evaluation: ' + err.message);
+  });
+}
     function showLoading() {
       document.getElementById('output-loading').classList.remove('hidden');
       document.getElementById('output-content').classList.add('hidden');
@@ -467,27 +448,32 @@
       document.getElementById('eval-content').classList.remove('hidden');
     }
 
-    function displayResults(data) {
-      document.getElementById('model-response').innerHTML = `<p class="text-gray-800">${data.answer || 'No response generated'}</p>`;
-      const sourcesHtml = data.sources && data.sources.length
-        ? data.sources.map(s => `<div class="mb-2 p-2 bg-white rounded border"><strong>${s.title}:</strong> ${s.content}</div>`).join('')
-        : '<p class="text-gray-400 italic">No sources available</p>';
-      document.getElementById('model-sources').innerHTML = sourcesHtml;
-      document.getElementById('token-count').textContent = data.token_count || '-';
-      document.getElementById('response-time').textContent = data.response_time ? `${data.response_time}ms` : '-';
-      document.getElementById('used-model').textContent = data.model || '-';
-      document.getElementById('response-status').textContent = data.status || 'Success';
-    }
-
-    function displayEvaluation(evaluation) {
-      document.getElementById('overall-score').textContent = evaluation.overall_score;
-      updateMetricBar('relevance', evaluation.relevance);
-      updateMetricBar('accuracy', evaluation.accuracy);
-      updateMetricBar('completeness', evaluation.completeness);
-      updateMetricBar('clarity', evaluation.clarity);
-      document.getElementById('detailed-evaluation').innerHTML = `<p class="text-gray-800">${evaluation.detailed_analysis}</p>`;
-      document.getElementById('suggestions').innerHTML = `<p class="text-blue-800">${evaluation.suggestions}</p>`;
-    }
+   function displayEvaluation(evaluation) {
+  if (typeof evaluation === "object" && evaluation.detailed_analysis) {
+    // If you ever go back to structured output.
+    document.getElementById('overall-score').textContent = evaluation.overall_score || '-';
+    updateMetricBar('relevance', evaluation.relevance);
+    updateMetricBar('accuracy', evaluation.accuracy);
+    updateMetricBar('completeness', evaluation.completeness);
+    updateMetricBar('clarity', evaluation.clarity);
+    document.getElementById('detailed-evaluation').innerHTML = `<p class="text-gray-800">${evaluation.detailed_analysis}</p>`;
+    document.getElementById('suggestions').innerHTML = `<p class="text-blue-800">${evaluation.suggestions}</p>`;
+    // Show metric bars
+    document.querySelectorAll('.flex.items-center.justify-between').forEach(e => e.style.display = '');
+  } else if (typeof evaluation === "string") {
+    // Hide all score/progress bars for minimalist look
+    document.getElementById('overall-score').textContent = '-';
+    ['relevance', 'accuracy', 'completeness', 'clarity'].forEach(metric => {
+      updateMetricBar(metric, 0);
+    });
+    document.querySelectorAll('.flex.items-center.justify-between').forEach(e => e.style.display = 'none');
+    // Show only the markdown
+    document.getElementById('detailed-evaluation').innerHTML =
+      `<pre class="text-gray-800 whitespace-pre-wrap">${evaluation}</pre>`;
+    document.getElementById('suggestions').innerHTML =
+      '<p class="text-gray-400 italic">No structured suggestions. See full report above.</p>';
+  }
+}
 
     function updateMetricBar(metric, score) {
       const bar = document.getElementById(`${metric}-bar`);

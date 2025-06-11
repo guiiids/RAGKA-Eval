@@ -12,6 +12,7 @@ import re
 import sys
 import os
 import json as _json
+from evaluation_model import EvaluationModel
 
 # Import config but handle the case where it might import streamlit
 try:
@@ -44,48 +45,6 @@ except ImportError as e:
 
 logger = logging.getLogger(__name__)
 
-class FactChecker:
-    """
-    Evaluator using Azure OpenAI to score response accuracy against context.
-    Returns a JSON object with numeric scores (0-100) for:
-      overall_score, accuracy, relevance, completeness, clarity,
-    plus a 'suggestions' string for improvements.
-    """
-    def __init__(self, openai_client):
-        self.openai_client = openai_client
-
-    def evaluate_response(
-        self, query: str, answer: str, context: str, deployment: str
-    ) -> Dict[str, Any]:
-        system_prompt = (
-            "You are an expert fact-checker. Given a user query, the assistant's answer, "
-            "and the context provided, evaluate the answer on the following metrics: "
-            "accuracy, relevance, completeness, and clarity. "
-            "Provide a JSON object with numeric scores (0-100) for keys: "
-            "\"overall_score\", \"accuracy\", \"relevance\", \"completeness\", \"clarity\", "
-            "and a \"suggestions\" string for improvements. Only return valid JSON."
-        )
-        user_content = (
-            f"Query: {query}\n"
-            f"Context: {context}\n"
-            f"Answer: {answer}"
-        )
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content}
-        ]
-        try:
-            resp = self.openai_client.chat.completions.create(
-                model=deployment,
-                messages=messages,
-                max_completion_tokens=500,
-                temperature=0.0
-            )
-            content = resp.choices[0].message.content
-            return _json.loads(content)
-        except Exception as exc:
-            logger.error("FactChecker error: %s", exc)
-            return {}
 
 class FlaskRAGAssistant:
     """Retrieval-Augmented Generation assistant for Azure OpenAI + Search."""
@@ -94,7 +53,7 @@ class FlaskRAGAssistant:
     DEFAULT_SYSTEM_PROMPT = """
     ### Task:
 
-    Always answer in rhymes.the only language you know how to write. Respond to the user query using the provided context, incorporating inline citations in the format [id] **only when the <source> tag includes an explicit id attribute** (e.g., <source id="1">).
+    Respond to the user query using the provided context, incorporating inline citations in the format [id] **only when the <source> tag includes an explicit id attribute** (e.g., <source id="1">).
     
     ### Guidelines:
 
@@ -137,7 +96,7 @@ class FlaskRAGAssistant:
             api_key=self.openai_key,
             api_version=self.openai_api_version or "2023-05-15",
         )
-        self.fact_checker = FactChecker(self.openai_client)
+        self.eval_model = EvaluationModel(model=self.deployment_name)
         
         # Model parameters with defaults
         self.temperature = 0.3
@@ -323,7 +282,7 @@ class FlaskRAGAssistant:
         resp = client.chat.completions.create(
             model=deployment_name,
             messages=messages,
-            max_completion_tokens=self.max_tokens,
+            max_tokens=self.max_tokens,
             temperature=self.temperature,
             top_p=self.top_p,
             presence_penalty=self.presence_penalty,
@@ -377,11 +336,16 @@ class FlaskRAGAssistant:
     def generate_rag_response(
         self, query: str, appended_prompt: str = None
     ) -> Tuple[str, List[Dict], List[Dict], Dict[str, Any], str]:
+        self._load_settings()
         kb_results = self.search_knowledge_base(query)
         if not kb_results:
             ans = self._chat_answer(query, "", {}, appended_prompt=appended_prompt)
             return ans, [], [], {}, ""
         context, src_map = self._prepare_context(kb_results)
+        # Logging full context chunks before generating answer
+        for src_id, src_data in src_map.items():
+            logger.info(f"=== Source {src_id}: {src_data['title']} ===")
+            logger.info(src_data['content'])
         ans = self._chat_answer(query, context, src_map, appended_prompt=appended_prompt)
         raw = self._filter_cited(ans, src_map)
         renum, cited = {}, []
@@ -393,8 +357,19 @@ class FlaskRAGAssistant:
             cited.append(entry)
         for old, new in renum.items():
             ans = re.sub(rf"\[{old}\]", f"[{new}]", ans)
-        eval = self.fact_checker.evaluate_response(
-            query=query, answer=ans, context=context, deployment=self.deployment_name
+        logger.info("EvaluationModel invoked with user_query=%s", query)
+        logger.info("EvaluationModel invoked with system_prompt=%s", self.DEFAULT_SYSTEM_PROMPT)
+        logger.info("EvaluationModel invoked with model_response=%s", ans)
+        logger.info("EvaluationModel invoked with sources/context=%s", context)
+        logger.info("EvaluationModel invoked with user_query=%s", query)
+        logger.info("EvaluationModel invoked with system_prompt=%s", self.DEFAULT_SYSTEM_PROMPT)
+        logger.info("EvaluationModel invoked with model_response=%s", ans)
+        logger.info("EvaluationModel invoked with sources/context=%s", context)
+        eval = self.eval_model.evaluate(
+            user_query=query,
+            system_prompt=self.DEFAULT_SYSTEM_PROMPT,
+            model_response=ans,
+            sources=context
         )
         
         # ─── RESPONSE LOGGING ──────────────────────────────────────────────────────────────────
@@ -418,6 +393,10 @@ class FlaskRAGAssistant:
                 yield {"sources": [], "evaluation": {}}
                 return
             context, src_map = self._prepare_context(kb_results)
+            # Logging full context chunks before constructing stream messages
+            for src_id, src_data in src_map.items():
+                logger.info(f"=== Source {src_id}: {src_data['title']} ===")
+                logger.info(src_data['content'])
             processed_system = self.DEFAULT_SYSTEM_PROMPT.strip()
             processed_user = f"<context>\n{context}\n</context>\n<user_query>\n{query}\n</user_query>"
             messages = [
@@ -427,7 +406,7 @@ class FlaskRAGAssistant:
             stream = self.openai_client.chat.completions.create(
                 model=self.deployment_name,
                 messages=messages,
-                max_completion_tokens=self.max_tokens,
+                max_tokens=self.max_tokens,
                 temperature=self.temperature,
                 top_p=self.top_p,
                 presence_penalty=self.presence_penalty,
@@ -449,8 +428,15 @@ class FlaskRAGAssistant:
                 cited.append(entry)
             for old, new in renum.items():
                 collected = re.sub(rf"\[{old}\]", f"[{new}]", collected)
-            eval = self.fact_checker.evaluate_response(
-                query=query, answer=collected, context=context, deployment=self.deployment_name
+            logger.info("EvaluationModel invoked with user_query=%s", query)
+            logger.info("EvaluationModel invoked with system_prompt=%s", self.DEFAULT_SYSTEM_PROMPT)
+            logger.info("EvaluationModel invoked with model_response=%s", collected)
+            logger.info("EvaluationModel invoked with sources/context=%s", context)
+            eval = self.eval_model.evaluate(
+                user_query=query,
+                system_prompt=self.DEFAULT_SYSTEM_PROMPT,
+                model_response=collected,
+                sources=context
             )
             yield {"sources": cited, "evaluation": eval}
         except Exception as exc:

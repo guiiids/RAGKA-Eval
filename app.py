@@ -47,7 +47,7 @@ except Exception as e:
 @app.route('/')
 def index():
     """Serve the main interface"""
-    return send_from_directory('.', 'index.html')
+    return render_template('index.html')
 
 @app.route('/api/system_prompt', methods=['GET'])
 def system_prompt():
@@ -56,32 +56,23 @@ def system_prompt():
 
 @app.route('/api/query', methods=['POST'])
 def query():
-    """Handle query requests from the interface"""
     try:
         data = request.get_json()
-        
         if not data or 'query' not in data:
             return jsonify({'error': 'Query is required'}), 400
-        
+
         query_text = data['query']
         model = data.get('model', 'gpt-4o')
+        system_prompt = data.get('system_prompt', rag_assistant.system_prompt)
         appended_prompt = data.get('appended_prompt', '')
         temperature = data.get('temperature', 0.7)
         top_k = data.get('top_k', 50)
         top_p = data.get('top_p', 0.9)
         max_tokens = data.get('max_tokens', 1000)
-        
+
         logger.info(f"Processing query: {query_text[:100]}...")
-        logger.info(f"Parameters - Model: {model}, Temp: {temperature}, Top-K: {top_k}, Top-P: {top_p}")
-        
-        start_time = time.time()
-        
-        
-        # Real mode - use RAG assistant
-        if not rag_assistant:
-            return jsonify({'error': 'RAG Assistant not available. Please check your Azure configuration.'}), 500
-        
-        # Call the RAG assistant
+
+        # --- RAG Step ---
         result = rag_assistant.query(
             query=query_text,
             deployment=model,
@@ -90,34 +81,50 @@ def query():
             max_tokens=max_tokens,
             appended_prompt=appended_prompt
         )
-        
-        end_time = time.time()
-        response_time = int((end_time - start_time) * 1000)  # Convert to milliseconds
-        
-        # Extract answer and sources from result
-        if isinstance(result, tuple) and len(result) >= 2:
-            answer, sources = result[0], result[1]
-        else:
-            answer = str(result)
-            sources = []
-        
-        # Format sources for display
+        answer, sources = result[0], result[1]
+
+        # Format full sources/context for display and for evaluator
         formatted_sources = []
+        full_context = ""
         if sources:
-            for i, source in enumerate(sources[:5]):  # Limit to 5 sources
-                if isinstance(source, dict):
-                    formatted_sources.append({
-                        'title': source.get('title', f'Source {i+1}'),
-                        'content': source.get('content', '')[:200] + '...' if len(source.get('content', '')) > 200 else source.get('content', ''),
-                        'score': source.get('score', 0)
-                    })
-                else:
-                    formatted_sources.append({
-                        'title': f'Source {i+1}',
-                        'content': str(source)[:200] + '...' if len(str(source)) > 200 else str(source),
-                        'score': 0
-                    })
-        
+            for i, source in enumerate(sources, 1):
+                content = source.get('content', '') if isinstance(source, dict) else str(source)
+                title = source.get('title', f'Source {i}') if isinstance(source, dict) else f'Source {i}'
+                score = source.get('score', 0) if isinstance(source, dict) else 0
+                formatted_sources.append({'title': title, 'content': content, 'score': score})
+                full_context += f"\n### Source {i}: {title}\n{content}\n"
+
+        # --- Casefile for Evaluator LLM ---
+        casefile = f"""
+## Session Information
+- Timestamp: {datetime.now().isoformat()}
+- Model: {model}
+- Parameters: temperature={temperature}, top_k={top_k}, top_p={top_p}, max_tokens={max_tokens}
+
+## Query
+{query_text}
+
+## System Prompt
+{system_prompt}
+
+## Appended Prompt
+{appended_prompt}
+
+## Model Parameters
+temperature={temperature}, top_k={top_k}, top_p={top_p}, max_tokens={max_tokens}
+
+## Response
+{answer}
+
+## Sources
+{full_context}
+"""
+
+        # --- Evaluation Step ---
+        from evaluation_model import EvaluationModel
+        eval_model = EvaluationModel(model=model)
+        diagnostic = eval_model.evaluate_case_file(casefile)
+
         response_data = {
             'answer': answer,
             'sources': formatted_sources,
@@ -126,17 +133,15 @@ def query():
             'top_k': top_k,
             'top_p': top_p,
             'max_tokens': max_tokens,
-            'response_time': response_time,
-            'token_count': len(answer.split()) if answer else 0,  # Rough token estimate
             'status': 'success',
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'evaluation': diagnostic
         }
-        
-        logger.info(f"Query processed successfully in {response_time}ms")
+        logger.info("Query+Evaluation complete")
         return jsonify(response_data)
-        
+
     except Exception as e:
-        logger.error(f"Error processing query: {e}")
+        logger.error(f"Error in /api/query: {e}")
         return jsonify({
             'error': str(e),
             'status': 'error',
@@ -145,31 +150,28 @@ def query():
 
 @app.route('/api/evaluate', methods=['POST'])
 def evaluate():
-    """Handle evaluation requests"""
+    """Handle evaluation requests using EvaluationModel"""
     try:
         data = request.get_json()
-        
-        if not data or 'query' not in data or 'answer' not in data:
-            return jsonify({'error': 'Query and answer are required'}), 400
-        
-        query_text = data['query']
-        answer = data['answer']
-        sources = data.get('sources', [])
-        
-        logger.info(f"Evaluating response for query: {query_text[:100]}...")
-        
-        # Actual evaluation using FactChecker
-        context = data.get('context', '')
-        model = data.get('model', rag_assistant.deployment_name)
-        evaluation = rag_assistant.fact_checker.evaluate_response(
-            query=query_text,
-            answer=answer,
-            context=context,
-            deployment=model
+        if not data:
+            return jsonify({'error': 'Request body is required'}), 400
+
+        # Validate required evaluation fields
+        required_fields = ['user_query', 'system_prompt', 'model_response', 'sources']
+        missing = [f for f in required_fields if f not in data]
+        if missing:
+            return jsonify({'error': 'Missing fields', 'missing_fields': missing}), 400
+
+        from evaluation_model import EvaluationModel
+        eval_model = EvaluationModel(model=data.get('model'))
+        diagnostic = eval_model.evaluate(
+            data['user_query'],
+            data['system_prompt'],
+            data['model_response'],
+            data['sources']
         )
-        logger.info("Evaluation completed successfully")
-        return jsonify(evaluation)
-        
+        return jsonify({'diagnostic': diagnostic}), 200
+
     except Exception as e:
         logger.error(f"Error during evaluation: {e}")
         return jsonify({
