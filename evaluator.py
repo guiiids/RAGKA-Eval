@@ -145,7 +145,7 @@ Evaluation Report
         resp = self.client.chat.completions.create(
             model=self.deployment,
             messages=messages,
-            max_tokens=1500,
+            max_completion_tokens=1500,
             temperature=0.0,
         )
         content = resp.choices[0].message.content

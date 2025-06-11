@@ -75,37 +75,38 @@ class EvaluationModel:
         else:
             sources_str = sources
 
-        # Assemble diagnostic prompt
-        diagnostician_prompt = (
+        # Build and populate the diagnostic prompt template
+        template = (
             "You are a Lead AI System Architect specializing in prompt engineering "
             "and RAG system diagnostics. Evaluate the effectiveness and robustness "
             "of the System Prompt based on the provided inputs. "
             "Return a markdown-formatted diagnostic report with sections: "
             "1. Overall Assessment, 2. Detailed Analysis, 3. Actionable Recommendations. "
             "Strictly follow the Prompt Diagnostician’s Mandate."
+            "\n\n### User Query\n{{user_query}}"
+            "\n\n### System Prompt\n{{system_prompt}}"
+            "\n\n### Model Response\n{{model_response}}"
+            "\n\n### Sources\n{{sources}}"
         )
-        logger.info("EvaluationModel: using diagnostic prompt")
-        user_content = (
-            "### User Query\n"
-            + user_query.strip()
-            + "\n\n### System Prompt\n"
-            + system_prompt.strip()
-            + "\n\n### Model Response\n"
-            + model_response.strip()
-            + "\n\n### Sources\n"
-            + sources_str.strip()
+        # Replace placeholders with actual inputs
+        prompt_to_use = (
+            template
+            .replace("{{user_query}}", user_query.strip())
+            .replace("{{system_prompt}}", system_prompt.strip())
+            .replace("{{model_response}}", model_response.strip())
+            .replace("{{sources}}", sources_str.strip())
         )
-
+        logger.info("EvaluationModel: invoking LLM with populated prompt")
         messages = [
-            {"role": "system", "content": diagnostician_prompt},
-            {"role": "user", "content": user_content}
+            {"role": "system", "content": prompt_to_use},
+            {"role": "user", "content": ""}
         ]
 
         logger.info("EvaluationModel: invoking LLM with deployment: %s", self.deployment)
         resp = self.client.chat.completions.create(
             model=self.deployment,
             messages=messages,
-            max_tokens=1000,
+            max_completion_tokens=1000,
             temperature=0.0
         )
         content = resp.choices[0].message.content
@@ -217,7 +218,7 @@ You will always receive a single document  or text from input, representing a f
         response = self.client.chat.completions.create(
             model=self.deployment,
             messages=messages,
-            max_tokens=1200,
+            max_completion_tokens=1200,
             temperature=0.0,
         )
         return response.choices[0].message.content

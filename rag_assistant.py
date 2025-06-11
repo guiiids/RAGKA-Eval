@@ -282,7 +282,7 @@ class FlaskRAGAssistant:
         resp = client.chat.completions.create(
             model=deployment_name,
             messages=messages,
-            max_tokens=self.max_tokens,
+            max_completion_tokens=self.max_tokens,
             temperature=self.temperature,
             top_p=self.top_p,
             presence_penalty=self.presence_penalty,
@@ -406,7 +406,7 @@ class FlaskRAGAssistant:
             stream = self.openai_client.chat.completions.create(
                 model=self.deployment_name,
                 messages=messages,
-                max_tokens=self.max_tokens,
+                max_completion_tokens=self.max_tokens,
                 temperature=self.temperature,
                 top_p=self.top_p,
                 presence_penalty=self.presence_penalty,
