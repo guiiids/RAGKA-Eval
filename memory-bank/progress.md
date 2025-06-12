@@ -6,28 +6,24 @@
 - The RAG assistant class is implemented with methods for generating embeddings, searching the knowledge base, and generating responses
 - The Flask API is set up with endpoints for querying the assistant and evaluating responses
 - The frontend interface is implemented with cards for model parameters, output, and evaluation
+- The evaluation data is now properly displayed in the UI, with metrics extracted from the markdown response
 
 ## What's Left to Build
-- Test the application to ensure the OpenAI API deployment error is fixed
+- Continue testing the application to ensure all features work correctly
 - Improve error handling and logging
 - Add more comprehensive documentation
 - Implement user feedback collection and analysis
 - Add support for streaming responses
 
 ## Current Status
-The application is currently non-functional due to an error with the Azure OpenAI API deployment. The error message indicates that the deployment specified in the configuration doesn't exist or isn't properly set up:
-
-```
-openai.NotFoundError: Error code: 404 - {'error': {'code': 'DeploymentNotFound', 'message': 'The API deployment for this resource does not exist. If you created the deployment within the last 5 minutes, please wait a moment and try again.'}}
-```
-
-We are in the process of diagnosing and fixing this issue.
+The application is now functional. We've fixed the evaluation display issue in the frontend, and the application is able to process queries and display responses with proper evaluation metrics.
 
 ## Known Issues
-1. **OpenAI API Deployment Error**: The application cannot connect to the specified Azure OpenAI deployment. We've reverted the deployment names in the .env file to use the actual deployment names available on the Azure OpenAI service (`embedding01` and `deployment02`), but we still need to test if this resolves the issue.
+1. **OpenAI API Deployment Error**: FIXED - We've resolved the connection issues with the Azure OpenAI deployment by using the correct deployment names.
 2. **Method Mismatch**: FIXED - We've implemented the missing `query` method in the rag_assistant.py file.
-3. **Error Handling**: The application doesn't provide user-friendly error messages for all error cases.
-4. **Documentation**: The documentation is incomplete, particularly regarding deployment and troubleshooting.
+3. **Evaluation Display**: FIXED - We've fixed the issue with evaluation data not displaying in the UI by consolidating the displayEvaluation function and properly parsing the evaluation data.
+4. **Error Handling**: The application doesn't provide user-friendly error messages for all error cases.
+5. **Documentation**: The documentation is incomplete, particularly regarding deployment and troubleshooting.
 
 ## Evolution of Project Decisions
 
@@ -37,12 +33,14 @@ We are in the process of diagnosing and fixing this issue.
 - Configuration was managed using environment variables loaded from a .env file
 
 ### Current Approach
-- We are maintaining the same overall architecture but focusing on fixing the immediate issues with the Azure OpenAI integration
-- We are considering adding better error handling and logging to make troubleshooting easier in the future
-- We may need to update the code to handle changes in the Azure OpenAI API or SDK
+- We are maintaining the same overall architecture while fixing frontend and backend issues
+- We've improved the frontend code to better handle the evaluation data structure
+- We're using regex pattern matching to extract structured data from markdown responses
+- We're adding better error handling and logging to make troubleshooting easier in the future
 
 ### Future Considerations
 - We may want to add support for multiple Azure OpenAI deployments to provide fallbacks
 - We could implement caching to improve performance and reduce API calls
 - We might want to add authentication to protect the API endpoints
 - We could enhance the frontend with more interactive features and visualizations
+- We should consider implementing a more structured evaluation response format to avoid having to parse markdown

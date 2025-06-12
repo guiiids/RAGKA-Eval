@@ -34,6 +34,7 @@ logger.info("RAG Assistant Interface starting up")
 app = Flask(__name__)
 
 # Initialize RAG assistant
+rag_assistant = None
 try:
     if FlaskRAGAssistant:
         rag_assistant = FlaskRAGAssistant()
@@ -65,22 +66,35 @@ def query():
         model = data.get('model', 'gpt-4o')
         system_prompt = data.get('system_prompt', rag_assistant.system_prompt)
         appended_prompt = data.get('appended_prompt', '')
-        temperature = data.get('temperature', 0.7)
+        # Omit temperature and top_p for o3, o4-mini, and gpt-4o
+        if model in ['o3', 'o4-mini', 'gpt-4o']:
+            temperature = None
+            top_p = None
+        else:
+            temperature = data.get('temperature', 0.7)
+            top_p = data.get('top_p', 0.9)
         top_k = data.get('top_k', 50)
-        top_p = data.get('top_p', 0.9)
         max_tokens = data.get('max_tokens', 1000)
 
         logger.info(f"Processing query: {query_text[:100]}...")
 
         # --- RAG Step ---
-        result = rag_assistant.query(
-            query=query_text,
-            deployment=model,
-            temperature=temperature,
-            top_p=top_p,
-            max_tokens=max_tokens,
-            appended_prompt=appended_prompt
-        )
+        if model in ['o3', 'o4-mini', 'gpt-4o']:
+            result = rag_assistant.query(
+                query=query_text,
+                deployment=model,
+                max_tokens=max_tokens,
+                appended_prompt=appended_prompt
+            )
+        else:
+            result = rag_assistant.query(
+                query=query_text,
+                deployment=model,
+                temperature=temperature,
+                top_p=top_p,
+                max_tokens=max_tokens,
+                appended_prompt=appended_prompt
+            )
         answer, sources = result[0], result[1]
 
         # Format full sources/context for display and for evaluator

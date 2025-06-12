@@ -135,7 +135,7 @@
 
   
         <!-- Temperature Slider -->
-        <div class="mb-4">
+        <div id="temp-container" class="mb-4">
           <label class="block text-sm font-medium text-gray-700 mb-2">
             <i class="fas fa-thermometer-half mr-1"></i> Temperature: <span id="temp-value" class="font-semibold text-blue-600">0.7</span>
           </label>
@@ -155,7 +155,7 @@
         </div>
 
         <!-- Top K Slider -->
-        <div class="mb-4">
+        <div id="top-k-container" class="mb-4">
           <label class="block text-sm font-medium text-gray-700 mb-2">
             <i class="fas fa-layer-group mr-1"></i> Top K: <span id="top-k-value" class="font-semibold text-blue-600">50</span>
           </label>
@@ -175,7 +175,7 @@
         </div>
 
         <!-- Top P Slider -->
-        <div class="mb-6">
+        <div id="top-p-container" class="mb-6">
           <label class="block text-sm font-medium text-gray-700 mb-2">
             <i class="fas fa-percentage mr-1"></i> Top P: <span id="top-p-value" class="font-semibold text-blue-600">0.9</span>
           </label>
@@ -347,7 +347,7 @@
         <div class="mt-6 flex justify-end">
   <button
     id="download-eval-btn"
-    class="text-sm w-full py-3 bg-gradient-to-l from-amber-200 to-yellow-500 Vtext-white font-semibold rounded-lg hover:from-emerald-500 hover:to-emerald-900 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-all"
+    class="text-sm w-full py-3 bg-gradient-to-l from-amber-300 to-yellow-500 Vtext-white font-semibold rounded-lg hover:from-emerald-500 hover:to-emerald-900 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-all"
     style="min-width: 160px;">
     <i class="fas fa-download mr-1"></i> Download Evaluation (.md)
   </button>
@@ -388,14 +388,13 @@
       // Generate button
       document.getElementById('generate-btn').addEventListener('click', generateResponse);
 
-      // Disable sliders for o3 and o4-mini models
+      // Hide or show slider containers for o3, o4-mini, and gpt-4o models
       const modelSelect = document.getElementById('gpt-mode');
       const updateSliders = () => {
-        const disabled = modelSelect.value === 'o3' || modelSelect.value === 'o4-mini';
-        ['temperature', 'top-k', 'top-p'].forEach(id => {
-          const el = document.getElementById(id);
-          el.disabled = disabled;
-        });
+        const hide = ['o3', 'o4-mini', 'gpt-4o'].includes(modelSelect.value);
+        document.getElementById('temp-container').style.display = hide ? 'none' : '';
+        document.getElementById('top-k-container').style.display = hide ? 'none' : '';
+        document.getElementById('top-p-container').style.display = hide ? 'none' : '';
       };
       modelSelect.addEventListener('change', updateSliders);
       updateSliders();
@@ -412,20 +411,22 @@ function displayResults(data) {
   document.getElementById('response-status').textContent = data.status || 'Success';
 }
   function generateResponse() {
-  const gptMode = document.getElementById('gpt-mode').value;
-  const appendedPrompt = document.getElementById('prompt-input').value.trim();
-  const query = document.getElementById('query-input').value.trim();
-  if (!query) { alert('Please enter a query'); return; }
-  showLoading();
-  const requestData = {
-    query: query,
-    model: gptMode,
-    appended_prompt: appendedPrompt,
-    temperature: parseFloat(document.getElementById('temperature').value),
-    top_k: parseInt(document.getElementById('top-k').value, 10),
-    top_p: parseFloat(document.getElementById('top-p').value),
-    max_tokens: 1000
-  };
+    const gptMode = document.getElementById('gpt-mode').value;
+    const appendedPrompt = document.getElementById('prompt-input').value.trim();
+    const query = document.getElementById('query-input').value.trim();
+    if (!query) { alert('Please enter a query'); return; }
+    showLoading();
+    const requestData = {
+      query: query,
+      model: gptMode,
+      appended_prompt: appendedPrompt,
+      max_tokens: 1000
+    };
+    if (!['o3', 'o4-mini', 'gpt-4o'].includes(gptMode)) {
+      requestData.temperature = parseFloat(document.getElementById('temperature').value);
+      requestData.top_k      = parseInt(document.getElementById('top-k').value, 10);
+      requestData.top_p      = parseFloat(document.getElementById('top-p').value);
+    }
   fetch('/api/query', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -436,7 +437,7 @@ function displayResults(data) {
     hideLoading();
     displayResults(data);
     displayEvaluation(data.evaluation); // <- Show the markdown result from the backend
-    lastEvaluationMarkdown = data.evaluation;
+    console.log("Evaluation data:", data.evaluation); // Log evaluation data for debugging
   })
   .catch(err => {
     hideLoading();
@@ -457,90 +458,139 @@ function displayResults(data) {
       document.getElementById('eval-content').classList.remove('hidden');
     }
 
-   function displayEvaluation(evaluation) {
-  if (typeof evaluation === "object" && evaluation.detailed_analysis) {
-    // If you ever go back to structured output.
-    document.getElementById('overall-score').textContent = evaluation.overall_score || '-';
-    updateMetricBar('relevance', evaluation.relevance);
-    updateMetricBar('accuracy', evaluation.accuracy);
-    updateMetricBar('completeness', evaluation.completeness);
-    updateMetricBar('clarity', evaluation.clarity);
-    document.getElementById('detailed-evaluation').innerHTML = `<p class="text-gray-800">${evaluation.detailed_analysis}</p>`;
-    document.getElementById('suggestions').innerHTML = `<p class="text-blue-800">${evaluation.suggestions}</p>`;
-    // Show metric bars
-    document.querySelectorAll('.flex.items-center.justify-between').forEach(e => e.style.display = '');
-  } else if (typeof evaluation === "string") {
-    // Hide all score/progress bars for minimalist look
-    document.getElementById('overall-score').textContent = '-';
-    ['relevance', 'accuracy', 'completeness', 'clarity'].forEach(metric => {
-      updateMetricBar(metric, 0);
-    });
-    document.querySelectorAll('.flex.items-center.justify-between').forEach(e => e.style.display = 'none');
-    // Show only the markdown
-    document.getElementById('detailed-evaluation').innerHTML =
-      `<pre class="text-gray-800 whitespace-pre-wrap">${evaluation}</pre>`;
-    document.getElementById('suggestions').innerHTML =
-      '<p class="text-gray-400 italic">No structured suggestions. See full report above.</p>';
-  }
-}
+    // Single implementation of displayEvaluation function
+    function displayEvaluation(evaluation) {
+      let lastEvaluationMarkdown = evaluation; // Store the raw evaluation for download
+      
+      // Extract metrics from evaluation markdown if possible
+      let relevanceScore = '-';
+      let accuracyScore = '-';
+      let completenessScore = '-';
+      let clarityScore = '-';
+      let detailedAnalysis = '';
+      let suggestions = '';
+      
+      if (typeof evaluation === "string") {
+        // Try to extract metrics from the markdown
+        const relevanceMatch = evaluation.match(/\*\*Relevance\*\*:\s*<([^>]+)>/);
+        const accuracyMatch = evaluation.match(/\*\*Accuracy\*\*:\s*<([^>]+)>/);
+        const completenessMatch = evaluation.match(/\*\*Completeness\*\*:\s*<([^>]+)>/);
+        const clarityMatch = evaluation.match(/\*\*Clarity\*\*:\s*<([^>]+)>/);
+        
+        // Extract scores if matches found
+        if (relevanceMatch) relevanceScore = relevanceMatch[1];
+        if (accuracyMatch) accuracyScore = accuracyMatch[1];
+        if (completenessMatch) completenessScore = completenessMatch[1];
+        if (clarityMatch) clarityScore = clarityMatch[1];
+        
+        // Extract detailed analysis section
+        const analysisMatch = evaluation.match(/## Detailed Analysis\s*([\s\S]*?)(?=##|$)/);
+        if (analysisMatch) {
+          detailedAnalysis = analysisMatch[1].trim();
+        }
+        
+        // Extract suggestions section
+        const suggestionsMatch = evaluation.match(/## Suggestions\s*([\s\S]*?)(?=##|$)/);
+        if (suggestionsMatch) {
+          suggestions = suggestionsMatch[1].trim();
+        }
+        
+        // Update UI with extracted metrics
+        updateMetricBar('relevance', isNumeric(relevanceScore) ? parseFloat(relevanceScore) : 0);
+        updateMetricBar('accuracy', isNumeric(accuracyScore) ? parseFloat(accuracyScore) : 0);
+        updateMetricBar('completeness', isNumeric(completenessScore) ? parseFloat(completenessScore) : 0);
+        updateMetricBar('clarity', isNumeric(clarityScore) ? parseFloat(clarityScore) : 0);
+        
+        // Show or hide metric bars based on whether we found metrics
+        const hasMetrics = isNumeric(relevanceScore) || isNumeric(accuracyScore) || 
+                          isNumeric(completenessScore) || isNumeric(clarityScore);
+        document.querySelectorAll('.flex.items-center.justify-between').forEach(e => {
+          e.style.display = hasMetrics ? '' : 'none';
+        });
+        
+        // Update detailed analysis and suggestions
+        document.getElementById('detailed-evaluation').innerHTML = detailedAnalysis ? 
+          `<p class="text-gray-800">${detailedAnalysis}</p>` : 
+          `<pre class="text-gray-800 whitespace-pre-wrap">${evaluation}</pre>`;
+        
+        document.getElementById('suggestions').innerHTML = suggestions ? 
+          `<p class="text-blue-800">${suggestions}</p>` : 
+          '<p class="text-gray-400 italic">No structured suggestions. See full report above.</p>';
+      } else if (typeof evaluation === "object" && evaluation.detailed_analysis) {
+        // Handle structured object format if it exists
+        updateMetricBar('relevance', evaluation.relevance || 0);
+        updateMetricBar('accuracy', evaluation.accuracy || 0);
+        updateMetricBar('completeness', evaluation.completeness || 0);
+        updateMetricBar('clarity', evaluation.clarity || 0);
+        
+        document.getElementById('detailed-evaluation').innerHTML = 
+          `<p class="text-gray-800">${evaluation.detailed_analysis}</p>`;
+        document.getElementById('suggestions').innerHTML = 
+          `<p class="text-blue-800">${evaluation.suggestions}</p>`;
+          
+        document.querySelectorAll('.flex.items-center.justify-between').forEach(e => {
+          e.style.display = '';
+        });
+        
+        lastEvaluationMarkdown = `# Detailed Analysis\n${evaluation.detailed_analysis}\n\n# Suggestions\n${evaluation.suggestions}`;
+      } else {
+        // Handle case where evaluation is empty or invalid
+        ['relevance', 'accuracy', 'completeness', 'clarity'].forEach(metric => {
+          updateMetricBar(metric, 0);
+        });
+        
+        document.querySelectorAll('.flex.items-center.justify-between').forEach(e => {
+          e.style.display = 'none';
+        });
+        
+        document.getElementById('detailed-evaluation').innerHTML = 
+          `<p class="text-gray-400 italic">No evaluation available</p>`;
+        document.getElementById('suggestions').innerHTML = 
+          '<p class="text-gray-400 italic">No suggestions available</p>';
+      }
+      
+      // Store the evaluation for download
+      window.lastEvaluationMarkdown = lastEvaluationMarkdown;
+    }
+    
+    // Helper function to check if a value is numeric
+    function isNumeric(value) {
+      return !isNaN(parseFloat(value)) && isFinite(value);
+    }
 
     function updateMetricBar(metric, score) {
       const bar = document.getElementById(`${metric}-bar`);
       const scoreEl = document.getElementById(`${metric}-score`);
-      bar.style.width = `${score}%`;
-      scoreEl.textContent = score;
+      if (bar && scoreEl) {
+        // Convert score to percentage if it's not already
+        const percentage = score <= 1 ? score * 100 : score;
+        bar.style.width = `${percentage}%`;
+        scoreEl.textContent = score;
+      }
     }
 
     function displayError(msg) {
       document.getElementById('model-response').innerHTML = `<p class="text-red-600">${msg}</p>`;
     }
-    let lastEvaluationMarkdown = ""; // Stores the raw markdown/string of the latest evaluation
 
-// Update displayEvaluation so it always stores the latest markdown for download
-function displayEvaluation(evaluation) {
-  if (typeof evaluation === "object" && evaluation.detailed_analysis) {
-    // If you ever go back to structured output.
-    document.getElementById('overall-score').textContent = evaluation.overall_score || '-';
-    updateMetricBar('relevance', evaluation.relevance);
-    updateMetricBar('accuracy', evaluation.accuracy);
-    updateMetricBar('completeness', evaluation.completeness);
-    updateMetricBar('clarity', evaluation.clarity);
-    document.getElementById('detailed-evaluation').innerHTML = `<p class="text-gray-800">${evaluation.detailed_analysis}</p>`;
-    document.getElementById('suggestions').innerHTML = `<p class="text-blue-800">${evaluation.suggestions}</p>`;
-    // Store as markdown (convert object to markdown as needed)
-    lastEvaluationMarkdown = `# Detailed Analysis\n${evaluation.detailed_analysis}\n\n# Suggestions\n${evaluation.suggestions}`;
-  } else if (typeof evaluation === "string") {
-    document.getElementById('overall-score').textContent = '-';
-    ['relevance', 'accuracy', 'completeness', 'clarity'].forEach(metric => {
-      updateMetricBar(metric, 0);
+    // Download button handler
+    document.getElementById('download-eval-btn').addEventListener('click', function() {
+      if (!window.lastEvaluationMarkdown || window.lastEvaluationMarkdown.trim() === "") {
+        alert("No evaluation to download yet.");
+        return;
+      }
+      const blob = new Blob([window.lastEvaluationMarkdown], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "evaluation.md";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
     });
-    document.querySelectorAll('.flex.items-center.justify-between').forEach(e => e.style.display = 'none');
-    document.getElementById('detailed-evaluation').innerHTML =
-      `<pre class="text-gray-800 whitespace-pre-wrap">${evaluation}</pre>`;
-    document.getElementById('suggestions').innerHTML =
-      '<p class="text-gray-400 italic">No structured suggestions. See full report above.</p>';
-    lastEvaluationMarkdown = evaluation;
-  }
-}
-
-// Download button handler
-document.getElementById('download-eval-btn').addEventListener('click', function() {
-  if (!lastEvaluationMarkdown || lastEvaluationMarkdown.trim() === "") {
-    alert("No evaluation to download yet.");
-    return;
-  }
-  const blob = new Blob([lastEvaluationMarkdown], { type: "text/markdown" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "evaluation.md";
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 100);
-});
   </script>
 </body>
 </html>

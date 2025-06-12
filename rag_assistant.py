@@ -279,15 +279,19 @@ class FlaskRAGAssistant:
             api_key=api_key,
             api_version=api_version or "2023-05-15",
         )
-        resp = client.chat.completions.create(
-            model=deployment_name,
-            messages=messages,
-            max_completion_tokens=self.max_tokens,
-            temperature=self.temperature,
-            top_p=self.top_p,
-            presence_penalty=self.presence_penalty,
-            frequency_penalty=self.frequency_penalty
-        )
+        # Build API request parameters, omitting all optional parameters for o3 and o4-mini
+        params = {
+            "model": deployment_name,
+            "messages": messages,
+            "max_completion_tokens": self.max_tokens
+        }
+        # Only include optional parameters for standard models (exclude o3, o4-mini, gpt-4o)
+        if deployment_name not in ("o3", "o4-mini", "gpt-4o"):
+            params["temperature"] = self.temperature
+            params["top_p"] = self.top_p
+            params["presence_penalty"] = self.presence_penalty
+            params["frequency_penalty"] = self.frequency_penalty
+        resp = client.chat.completions.create(**params)
         answer = resp.choices[0].message.content
         logger.info("DEBUG - OpenAI response content: %s", answer)
         logger.info("========== OPENAI API RESPONSE ==========")
@@ -443,3 +447,4 @@ class FlaskRAGAssistant:
             logger.error("RAG stream error: %s", exc)
             yield "I encountered an error while streaming the response."
             yield {"sources": [], "evaluation": {}, "error": str(exc)}
+
