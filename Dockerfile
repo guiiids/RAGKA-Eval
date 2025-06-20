@@ -1,23 +1,18 @@
-# Use official Python runtime as a parent image
-FROM python:3.11-slim
+FROM python:3.11-slim-bullseye
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
-# Set work directory
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt /app/
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+# Pre-copy only requirements to leverage layer caching
+COPY requirements.txt .
 
-# Copy project
-COPY . /app/
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends gcc && \
+	pip install --no-cache-dir -r requirements.txt && \
+	apt-get purge -y --auto-remove gcc && \
+	rm -rf /var/lib/apt/lists/*
 
-# Expose port (adjust if your app uses a different port)
+# Copy the rest of the app
+COPY . .
+
 EXPOSE 8000
 
-# Command to run the app (adjust if needed)
-CMD ["python", "app.py"]
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000"]
