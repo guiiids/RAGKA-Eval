@@ -1,0 +1,78 @@
+2025-06-19 02:56:01,955 - INFO - RAG Assistant Interface starting up
+2025-06-19 02:56:01,956 - ERROR - Failed to initialize RAG Assistant: Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.
+2025-06-19 02:56:01,956 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 02:56:03,094 - INFO - RAG Assistant Interface starting up
+2025-06-19 02:56:03,095 - ERROR - Failed to initialize RAG Assistant: Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.
+2025-06-19 02:56:03,096 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 02:56:12,441 - INFO - RAG Assistant Interface starting up
+2025-06-19 02:56:12,442 - ERROR - Failed to initialize RAG Assistant: Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.
+2025-06-19 02:56:12,442 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 02:56:15,213 - INFO - RAG Assistant Interface starting up
+2025-06-19 02:56:15,214 - ERROR - Failed to initialize RAG Assistant: Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.
+2025-06-19 02:56:15,215 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 02:56:21,460 - INFO - RAG Assistant Interface starting up
+2025-06-19 02:56:21,461 - ERROR - Failed to initialize RAG Assistant: Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.
+2025-06-19 02:56:21,462 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 02:56:24,540 - INFO - RAG Assistant Interface starting up
+2025-06-19 02:56:24,540 - ERROR - Failed to initialize RAG Assistant: Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.
+2025-06-19 02:56:24,541 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 02:56:30,767 - INFO - RAG Assistant Interface starting up
+2025-06-19 02:56:30,768 - ERROR - Failed to initialize RAG Assistant: Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.
+2025-06-19 02:56:30,768 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 02:56:32,842 - INFO - RAG Assistant Interface starting up
+2025-06-19 02:56:32,843 - ERROR - Failed to initialize RAG Assistant: Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.
+2025-06-19 02:56:32,843 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 02:56:34,963 - INFO - RAG Assistant Interface starting up
+2025-06-19 02:56:34,963 - ERROR - Failed to initialize RAG Assistant: Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.
+2025-06-19 02:56:34,964 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 02:56:37,975 - INFO - RAG Assistant Interface starting up
+2025-06-19 02:56:37,976 - ERROR - Failed to initialize RAG Assistant: Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.
+2025-06-19 02:56:37,976 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 04:47:35,211 - INFO - RAG Assistant Interface starting up
+2025-06-19 04:47:35,212 - ERROR - Failed to initialize RAG Assistant: Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.
+2025-06-19 04:47:35,214 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 04:47:38,597 - INFO - RAG Assistant Interface starting up
+2025-06-19 04:47:38,598 - ERROR - Failed to initialize RAG Assistant: Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.
+2025-06-19 04:47:38,598 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 04:57:18,096 - ERROR - Error in /api/query: 'NoneType' object has no attribute 'system_prompt'
+2025-06-19 05:02:46,431 - ERROR - Error in /api/query: 'NoneType' object has no attribute 'system_prompt'
+2025-06-19 06:48:04,349 - INFO - RAG Assistant Interface starting up
+2025-06-19 06:48:04,370 - INFO - RAG Assistant initialized successfully
+2025-06-19 06:48:04,372 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 06:48:10,838 - INFO - RAG Assistant Interface starting up
+2025-06-19 06:48:10,852 - INFO - RAG Assistant initialized successfully
+2025-06-19 06:48:10,853 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 06:48:43,046 - INFO - Processing query: ilab...
+2025-06-19 06:49:00,925 - INFO - Query+Evaluation complete
+2025-06-19 09:45:53,462 - INFO - Processing query: What is iLab?...
+2025-06-19 09:46:21,938 - INFO - Query+Evaluation complete
+2025-06-19 10:23:46,227 - INFO - RAG Assistant Interface starting up
+2025-06-19 10:23:46,246 - INFO - RAG Assistant initialized successfully
+2025-06-19 10:23:46,248 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 10:23:52,219 - INFO - RAG Assistant Interface starting up
+2025-06-19 10:23:52,234 - INFO - RAG Assistant initialized successfully
+2025-06-19 10:23:52,234 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 12:48:54,694 - INFO - Processing query: How to add a new core manager ?...
+2025-06-19 12:49:09,964 - INFO - Query+Evaluation complete
+2025-06-19 21:30:48,442 - INFO - RAG Assistant Interface starting up
+2025-06-19 21:30:48,470 - INFO - RAG Assistant initialized successfully
+2025-06-19 21:30:48,471 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-19 21:30:52,519 - INFO - RAG Assistant Interface starting up
+2025-06-19 21:30:52,533 - INFO - RAG Assistant initialized successfully
+2025-06-19 21:30:52,534 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-20 10:06:49,461 - INFO - RAG Assistant Interface starting up
+2025-06-20 10:06:49,497 - INFO - RAG Assistant initialized successfully
+2025-06-20 10:06:49,499 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-20 10:06:54,965 - INFO - RAG Assistant Interface starting up
+2025-06-20 10:06:54,980 - INFO - RAG Assistant initialized successfully
+2025-06-20 10:06:54,980 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-20 10:07:33,282 - INFO - Processing query: what is ilab?...
+2025-06-20 10:07:51,176 - INFO - Query+Evaluation complete
+2025-06-20 10:08:44,058 - INFO - Processing query: update core contact info in the tab...
+2025-06-20 10:09:03,832 - INFO - Query+Evaluation complete
+2025-06-20 10:18:55,968 - INFO - RAG Assistant Interface starting up
+2025-06-20 10:18:55,981 - INFO - RAG Assistant initialized successfully
+2025-06-20 10:18:55,982 - INFO - Starting Flask app on port 5005 with debug=True
+2025-06-20 10:19:03,163 - INFO - RAG Assistant Interface starting up
+2025-06-20 10:19:03,178 - INFO - RAG Assistant initialized successfully
+2025-06-20 10:19:03,179 - INFO - Starting Flask app on port 5005 with debug=True

@@ -574,23 +574,43 @@ function displayResults(data) {
     }
 
     // Download button handler
-    document.getElementById('download-eval-btn').addEventListener('click', function() {
-      if (!window.lastEvaluationMarkdown || window.lastEvaluationMarkdown.trim() === "") {
-        alert("No evaluation to download yet.");
-        return;
-      }
-      const blob = new Blob([window.lastEvaluationMarkdown], { type: "text/markdown" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "evaluation.md";
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-    });
+      document.getElementById('download-eval-btn').addEventListener('click', function() {
+        if (!window.lastEvaluationMarkdown || window.lastEvaluationMarkdown.trim() === "") {
+          alert("No evaluation to download yet.");
+          return;
+        }
+        // Build full download content including query, prompt, appended prompt, and response
+        const queryText = document.getElementById('query-input').value.trim();
+        const promptText = document.getElementById('system-prompt').value.trim();
+        const appendedPromptText = document.getElementById('prompt-input').value.trim();
+        const responseText = document.getElementById('model-response').innerText.trim();
+        const evalContent = window.lastEvaluationMarkdown;
+        const downloadMarkdown = `# Query
+${queryText}
+
+# Prompt
+${promptText}
+
+# Appended Prompt
+${appendedPromptText}
+
+# Response
+${responseText}
+
+## Evaluation
+${evalContent}`;
+        const blob = new Blob([downloadMarkdown], { type: "text/markdown" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "evaluation.md";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 100);
+      });
   </script>
 </body>
 </html>
